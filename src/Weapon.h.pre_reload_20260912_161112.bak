@@ -1,0 +1,33 @@
+#pragma once
+
+#include "Model.h"
+
+#include <string>
+
+class Renderer;
+
+class Weapon
+{
+public:
+    bool Initialize(
+        Renderer& renderer,
+        const std::string& glbPath,
+        std::string& error);
+
+    void Update(
+        float deltaTime,
+        bool playerMoving,
+        bool firedThisFrame);
+
+    void Render(Renderer& renderer);
+
+    bool IsLoaded() const { return m_loaded; }
+
+private:
+    GltfModel m_model;
+    bool m_loaded = false;
+
+    float m_recoil = 0.0f;
+    float m_animationTime = 0.0f;
+    bool m_playerMoving = false;
+};

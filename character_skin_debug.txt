@@ -1,0 +1,16 @@
+AnimatedGltfModel primitive bounds after CPU skinning
+Object_12/Head_Default OBJ.006_0 skin=0 verts=4036 min=(-15.2206,149.037,-17.8639) max=(2.44824,180.178,3.06932) weightSum=[1,1] maxJointSlot=49
+Object_13/Head_Default OBJ.003_0 skin=0 verts=162 min=(-8.2979,164.982,-2.34294) max=(2.51899,168.544,2.54282) weightSum=[1,1] maxJointSlot=49
+Object_14/Head_GoB_Lacrymal_Meniscus_0 skin=0 verts=4979 min=(-7.28255,157.244,-4.47042) max=(1.42996,166.706,1.41802) weightSum=[1,1] maxJointSlot=49
+Object_16/Jacket_GoB_Plane_001.001_0 skin=0 verts=2135 min=(-32.2018,84.0813,-30.5482) max=(17.5007,167.556,11.3607) weightSum=[1,1] maxJointSlot=56
+Object_18/Pants_GoB_Retopo_Pants1_0 skin=0 verts=4706 min=(-25.9256,-0.0345955,-45.3331) max=(11.7318,103.16,10.5327) weightSum=[1,1] maxJointSlot=60
+Object_20/Hair_Default OBJ_0 skin=0 verts=13220 min=(-20.236,139.854,-38.3139) max=(5.49051,181.702,3.74413) weightSum=[1,1] maxJointSlot=49
+Object_90/Shirt_SubD_Material.002_0 skin=0 verts=6187 min=(-28.854,92.0819,-25.9391) max=(16.2694,160.449,10.4537) weightSum=[1,1] maxJointSlot=56
+Object_92/Gloves_SubD_defaultMat.002_0 skin=0 verts=15438 min=(-19.4987,120.726,-13.9712) max=(9.59537,138.157,11.577) weightSum=[1,1] maxJointSlot=45
+Object_94/Backpack_low_Default OBJ.001_0 skin=0 verts=3534 min=(-26.8315,101.736,-52.795) max=(20.6487,155.947,-0.272913) weightSum=[1,1] maxJointSlot=27
+Object_95/Backpack_low_Default OBJ.002_0 skin=0 verts=1464 min=(-25.1072,104.058,-50.2846) max=(19.8002,154.525,-16.048) weightSum=[1,1] maxJointSlot=5
+Object_97/0 skin=0 verts=97 min=(-0.487992,165.465,-1.43574) max=(1.00369,167.045,-0.824112) weightSum=[1,1] maxJointSlot=49
+Object_99/Sclera.001_Eyeball.002_0 skin=0 verts=206 min=(-1.61085,164.939,-3.68226) max=(1.29018,167.831,-0.660346) weightSum=[1,1] maxJointSlot=49
+Object_101/1 skin=0 verts=97 min=(-6.3181,165.372,0.704954) max=(-4.82642,166.952,1.31658) weightSum=[1,1] maxJointSlot=49
+Object_103/Sclera.000_Eyeball.002_0 skin=0 verts=206 min=(-7.44095,164.846,-1.54157) max=(-4.53993,167.738,1.48034) weightSum=[1,1] maxJointSlot=49
+GLOBAL min=(-32.2018,-0.0345955,-52.795) max=(20.6487,181.702,11.577)

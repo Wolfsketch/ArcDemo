@@ -1,0 +1,32 @@
+#pragma once
+
+#include "Renderer.h"
+#include "Camera.h"
+#include "Scene.h"
+#include "Weapon.h"
+
+#include <windows.h>
+
+class Game
+{
+public:
+    bool Initialize(
+        HINSTANCE instance,
+        int showCommand);
+
+    int Run();
+
+private:
+    void UpdateWindowTitle(
+        bool fired,
+        bool hit);
+
+private:
+    Renderer m_renderer;
+    Camera m_camera;
+    Scene m_scene;
+    Weapon m_weapon;
+
+    bool m_previousMouseDown = false;
+    bool m_previousReloadDown = false;
+};

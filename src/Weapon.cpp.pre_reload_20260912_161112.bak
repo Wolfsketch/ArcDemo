@@ -1,0 +1,107 @@
+#include "Weapon.h"
+#include "Renderer.h"
+
+#include <cmath>
+
+using namespace DirectX;
+
+bool Weapon::Initialize(
+    Renderer& renderer,
+    const std::string& glbPath,
+    std::string& error)
+{
+    m_loaded = m_model.Load(
+        renderer.Device(),
+        glbPath,
+        error);
+
+    return m_loaded;
+}
+
+void Weapon::Update(
+    float deltaTime,
+    bool playerMoving,
+    bool firedThisFrame)
+{
+    m_animationTime += deltaTime;
+    m_playerMoving = playerMoving;
+
+    if (firedThisFrame)
+        m_recoil = 1.0f;
+
+    m_recoil -= deltaTime * 7.5f;
+
+    if (m_recoil < 0.0f)
+        m_recoil = 0.0f;
+}
+
+void Weapon::Render(Renderer& renderer)
+{
+    if (!m_loaded)
+        return;
+
+    renderer.ClearDepthOnly();
+
+    XMMATRIX projection = XMMatrixPerspectiveFovLH(
+        XMConvertToRadians(58.0f),
+        static_cast<float>(renderer.Width()) /
+            static_cast<float>(renderer.Height()),
+        0.01f,
+        10.0f);
+
+    float bobStrength = m_playerMoving ? 1.0f : 0.0f;
+
+    float bobX =
+        sinf(m_animationTime * 8.0f) *
+        0.012f *
+        bobStrength;
+
+    float bobY =
+        fabsf(cosf(m_animationTime * 8.0f)) *
+        0.009f *
+        bobStrength;
+
+    float idleX =
+        sinf(m_animationTime * 1.45f) *
+        0.0035f;
+
+    float idleY =
+        cosf(m_animationTime * 1.15f) *
+        0.0025f;
+
+    float recoilCurve = m_recoil * m_recoil;
+    float recoilBack = recoilCurve * 0.105f;
+    float recoilUp = recoilCurve * 0.030f;
+    float recoilPitchDegrees = recoilCurve * -4.0f;
+
+    XMMATRIX normalized =
+        m_model.MakeNormalizedTransform(1.35f);
+
+    // ASHFALL is authored lengthwise on Blender's X axis.
+    // Turn it into the view direction so the muzzle points forward.
+    XMMATRIX orientation =
+        XMMatrixRotationRollPitchYaw(
+            XMConvertToRadians(recoilPitchDegrees),
+            XMConvertToRadians(-90.0f),
+            0.0f);
+
+    XMMATRIX position =
+        XMMatrixTranslation(
+            0.28f + bobX + idleX,
+            -0.36f + bobY + idleY + recoilUp,
+            1.08f - recoilBack);
+
+    XMMATRIX world =
+        normalized *
+        orientation *
+        position;
+
+    m_model.Render(
+        renderer.Context(),
+        world,
+        XMMatrixIdentity(),
+        projection,
+        {0,0,0});
+
+    renderer.RestoreWorldPipeline();
+}
