@@ -151,7 +151,6 @@ int Game::Run()
             deltaTime,
             groundHeight);
 
-        // Re-sample after movement so the player follows the dunes.
         XMFLOAT3 movedPosition =
             m_camera.Position();
 
@@ -163,33 +162,55 @@ int Game::Run()
         m_camera.ResolveGroundHeight(
             movedGroundHeight);
 
-        bool focused =
+        const bool focused =
             GetForegroundWindow() ==
             m_renderer.Window();
 
-        bool mouseDown =
+        const bool viewToggleDown =
+            focused &&
+            ((GetAsyncKeyState('V') & 0x8000) != 0);
+
+        const bool viewTogglePressed =
+            viewToggleDown &&
+            !m_previousViewToggleDown;
+
+        if (viewTogglePressed)
+            m_thirdPerson = !m_thirdPerson;
+
+        m_previousViewToggleDown = viewToggleDown;
+
+        // The survivor body follows the exact same player controller as the
+        // first-person camera. This means WASD, sprint and jump all operate
+        // one pawn rather than a separate test character.
+        m_scene.UpdatePlayerCharacter(
+            m_renderer,
+            deltaTime,
+            m_camera.FeetPosition(),
+            m_camera.Yaw(),
+            m_camera.IsMoving(),
+            m_camera.IsSprinting(),
+            m_camera.IsGrounded());
+
+        const bool mouseDown =
             focused &&
             ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0);
 
-        bool reloadDown =
+        const bool reloadDown =
             focused &&
             ((GetAsyncKeyState('R') & 0x8000) != 0);
 
-        // SPACE is handled by the first-person Camera controller.
-        // The imported survivor is no longer a separate NPC/test pawn.
-
-        bool reloadPressed =
+        const bool reloadPressed =
             reloadDown &&
             !m_previousReloadDown;
 
         if (reloadPressed)
             m_weapon.StartReload();
 
-        bool triggerPressed =
+        const bool triggerPressed =
             mouseDown &&
             !m_previousMouseDown;
 
-        bool firedThisFrame =
+        const bool firedThisFrame =
             triggerPressed &&
             m_weapon.CanFire();
 
@@ -214,14 +235,16 @@ int Game::Run()
             firedThisFrame,
             hit);
 
-        XMMATRIX view =
-            m_camera.ViewMatrix();
+        const XMMATRIX view =
+            m_thirdPerson
+                ? m_camera.ThirdPersonViewMatrix()
+                : m_camera.ViewMatrix();
 
-        XMFLOAT3 cameraPosition =
-            m_camera.Position();
+        const XMFLOAT3 cameraPosition =
+            m_thirdPerson
+                ? m_camera.ThirdPersonPosition()
+                : m_camera.Position();
 
-        // Bright desert sky. The world shader fades distant geometry
-        // toward a matching atmospheric fog color.
         m_renderer.BeginFrame(
             {0.52f, 0.72f, 0.79f, 1.0f});
 
@@ -229,9 +252,14 @@ int Game::Run()
             m_renderer,
             view,
             projection,
-            cameraPosition);
+            cameraPosition,
+            m_thirdPerson,
+            m_thirdPerson);
 
-        m_weapon.Render(m_renderer);
+        // In third person the world-space player body/weapon is rendered by
+        // Scene. In first person only the viewmodel is rendered.
+        if (!m_thirdPerson)
+            m_weapon.Render(m_renderer);
 
         m_renderer.EndFrame();
     }
