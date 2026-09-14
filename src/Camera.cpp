@@ -83,13 +83,17 @@ void Camera::Update(
     XMVECTOR position = XMLoadFloat3(&m_position);
 
     m_isMoving = false;
+    m_isSprinting = false;
 
     if (focused)
     {
         float speed = m_moveSpeed;
 
         if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+        {
             speed = m_sprintSpeed;
+            m_isSprinting = true;
+        }
 
         if (GetAsyncKeyState('W') & 0x8000)
         {
@@ -114,6 +118,9 @@ void Camera::Update(
             position -= flatRight * speed * deltaTime;
             m_isMoving = true;
         }
+
+        if (!m_isMoving)
+            m_isSprinting = false;
     }
 
     XMStoreFloat3(&m_position, position);
@@ -161,8 +168,6 @@ void Camera::ResolveGroundHeight(float groundHeight)
         return;
     }
 
-    // If horizontal movement carries the player over higher terrain while
-    // descending, land on that terrain instead of passing through it.
     if (m_verticalVelocity <= 0.0f && m_position.y <= targetEyeY)
     {
         m_position.y = targetEyeY;
@@ -179,4 +184,33 @@ XMMATRIX Camera::ViewMatrix() const
     XMVECTOR up = XMVectorSet(0, 1, 0, 0);
 
     return XMMatrixLookToLH(position, forward, up);
+}
+
+XMFLOAT3 Camera::ThirdPersonPosition(
+    float distance,
+    float height) const
+{
+    const XMFLOAT3 forwardFloat = Forward();
+    XMVECTOR forward = XMLoadFloat3(&forwardFloat);
+    XMVECTOR eye = XMLoadFloat3(&m_position);
+    XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+
+    XMVECTOR thirdPerson = eye - forward * distance + up * height;
+
+    XMFLOAT3 result{};
+    XMStoreFloat3(&result, thirdPerson);
+    return result;
+}
+
+XMMATRIX Camera::ThirdPersonViewMatrix(
+    float distance,
+    float height) const
+{
+    const XMFLOAT3 cameraPosition = ThirdPersonPosition(distance, height);
+
+    XMVECTOR eye = XMLoadFloat3(&cameraPosition);
+    XMVECTOR target = XMLoadFloat3(&m_position);
+    XMVECTOR up = XMVectorSet(0, 1, 0, 0);
+
+    return XMMatrixLookAtLH(eye, target, up);
 }
