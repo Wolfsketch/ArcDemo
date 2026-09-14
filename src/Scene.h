@@ -21,16 +21,19 @@ public:
         Renderer& renderer,
         const DirectX::XMMATRIX& view,
         const DirectX::XMMATRIX& projection,
-        const DirectX::XMFLOAT3& cameraPosition
+        const DirectX::XMFLOAT3& cameraPosition,
+        bool renderPlayerBody,
+        bool renderPlayerRifle
     );
 
-
-    void UpdateTestCharacter(
+    void UpdatePlayerCharacter(
         Renderer& renderer,
         float deltaTime,
-        bool moveForward,
-        bool moveBackward,
-        bool jumpPressed
+        const DirectX::XMFLOAT3& feetPosition,
+        float yaw,
+        bool moving,
+        bool sprinting,
+        bool grounded
     );
 
     float GroundHeightAt(
@@ -67,10 +70,10 @@ private:
     Enemy m_enemy;
 
     ObjModel m_rockModel;
-    TestCharacter m_testCharacter;
+    TestCharacter m_playerCharacter;
 
     bool m_rockLoaded = false;
-    bool m_testCharacterLoaded = false;
+    bool m_playerCharacterLoaded = false;
 
     std::vector<RockInstance> m_rocks;
 };
