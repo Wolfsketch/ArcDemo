@@ -27,6 +27,8 @@ private:
     Scene m_scene;
     Weapon m_weapon;
 
+    bool m_thirdPerson = false;
+    bool m_previousViewToggleDown = false;
     bool m_previousMouseDown = false;
     bool m_previousReloadDown = false;
 };
