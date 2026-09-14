@@ -8,10 +8,6 @@ bool Scene::Initialize(
     Renderer& renderer,
     std::string& error)
 {
-    // ========================================================
-    // Terrain
-    // ========================================================
-
     if (!m_terrain.Initialize(
         renderer,
         220.0f,
@@ -21,10 +17,6 @@ bool Scene::Initialize(
         return false;
     }
 
-    // ========================================================
-    // Enemy
-    // ========================================================
-
     m_enemy.Initialize(
         m_terrain.HeightAt(
             0.0f,
@@ -32,18 +24,24 @@ bool Scene::Initialize(
         )
     );
 
-    // ========================================================
-    // Player character
-    // ========================================================
-    // The downloaded survivor is intended to become the PLAYER body, not a
-    // second pawn standing in the world.  In first-person we therefore do
-    // not spawn/render the old test character here.  The camera is the
-    // player controller; a first-person body can be attached to it later.
-    m_testCharacterLoaded = false;
+    // Load the survivor once. It no longer owns movement itself; the Camera
+    // is the player controller and pushes its position/yaw/state into this body.
+    {
+        std::string characterError;
+        m_playerCharacterLoaded = m_playerCharacter.Initialize(
+            renderer,
+            characterError);
 
-    // ========================================================
-    // Desert Rock OBJ
-    // ========================================================
+        if (!m_playerCharacterLoaded && !characterError.empty())
+        {
+            OutputDebugStringA(characterError.c_str());
+            MessageBoxA(
+                renderer.Window(),
+                characterError.c_str(),
+                "Player survivor load error",
+                MB_OK | MB_ICONWARNING);
+        }
+    }
 
     const std::string rockObj =
         "assets/models/desert_rock/rock01.obj";
@@ -57,40 +55,29 @@ bool Scene::Initialize(
     const std::string rockSpecular =
         "assets/models/desert_rock/rocktest_specular.png";
 
-    // Check that the OBJ actually exists.
-    if (std::filesystem::exists(
-        rockObj))
+    if (std::filesystem::exists(rockObj))
     {
         std::string rockError;
 
         m_rockLoaded =
             m_rockModel.Load(
                 renderer.Device(),
-
                 rockObj,
                 rockDiffuse,
                 rockNormal,
                 rockSpecular,
-
                 rockError
             );
 
-        if (!m_rockLoaded)
+        if (!m_rockLoaded && !rockError.empty())
         {
-            if (!rockError.empty())
-            {
-                OutputDebugStringA(
-                    rockError.c_str()
-                );
-
-                MessageBoxA(
-                    renderer.Window(),
-                    rockError.c_str(),
-                    "Desert Rock load error",
-                    MB_OK |
-                    MB_ICONWARNING
-                );
-            }
+            OutputDebugStringA(rockError.c_str());
+            MessageBoxA(
+                renderer.Window(),
+                rockError.c_str(),
+                "Desert Rock load error",
+                MB_OK | MB_ICONWARNING
+            );
         }
     }
     else
@@ -103,189 +90,79 @@ bool Scene::Initialize(
             renderer.Window(),
             missingMessage.c_str(),
             "Desert Rock ontbreekt",
-            MB_OK |
-            MB_ICONWARNING
+            MB_OK | MB_ICONWARNING
         );
     }
 
-    // ========================================================
-    // Rock placements
-    //
-    // Dit zijn GEEN aparte modellen.
-    // We laden rock01.obj maar 1 keer en tekenen hem daarna
-    // meerdere keren met andere positie / schaal / rotatie.
-    // ========================================================
-
     m_rocks =
     {
-        // Dichtbij links
-        {
-            {-7.0f, 0.0f, 12.0f},
-            3.0f,
-            XMConvertToRadians(20.0f)
-        },
-
-        // Dichtbij rechts
-        {
-            {8.0f, 0.0f, 15.0f},
-            2.4f,
-            XMConvertToRadians(110.0f)
-        },
-
-        // Links van enemy
-        {
-            {-13.0f, 0.0f, 22.0f},
-            5.0f,
-            XMConvertToRadians(55.0f)
-        },
-
-        // Rechts van enemy
-        {
-            {15.0f, 0.0f, 25.0f},
-            3.8f,
-            XMConvertToRadians(145.0f)
-        },
-
-        // Kleine steen
-        {
-            {3.0f, 0.0f, 29.0f},
-            1.5f,
-            XMConvertToRadians(210.0f)
-        },
-
-        // Groot midden-links
-        {
-            {-8.0f, 0.0f, 38.0f},
-            7.0f,
-            XMConvertToRadians(265.0f)
-        },
-
-        // Groot rechts
-        {
-            {24.0f, 0.0f, 46.0f},
-            6.0f,
-            XMConvertToRadians(80.0f)
-        },
-
-        // Ver links
-        {
-            {-29.0f, 0.0f, 52.0f},
-            8.5f,
-            XMConvertToRadians(175.0f)
-        },
-
-        // Ver rechts
-        {
-            {33.0f, 0.0f, 61.0f},
-            5.5f,
-            XMConvertToRadians(310.0f)
-        },
-
-        // Achtergrond
-        {
-            {-17.0f, 0.0f, 70.0f},
-            10.0f,
-            XMConvertToRadians(240.0f)
-        },
-
-        // Achtergrond rechts
-        {
-            {21.0f, 0.0f, 78.0f},
-            9.0f,
-            XMConvertToRadians(30.0f)
-        },
-
-        // Klein detail
-        {
-            {5.0f, 0.0f, 44.0f},
-            2.0f,
-            XMConvertToRadians(125.0f)
-        }
+        {{-7.0f, 0.0f, 12.0f}, 3.0f, XMConvertToRadians(20.0f)},
+        {{8.0f, 0.0f, 15.0f}, 2.4f, XMConvertToRadians(110.0f)},
+        {{-13.0f, 0.0f, 22.0f}, 5.0f, XMConvertToRadians(55.0f)},
+        {{15.0f, 0.0f, 25.0f}, 3.8f, XMConvertToRadians(145.0f)},
+        {{3.0f, 0.0f, 29.0f}, 1.5f, XMConvertToRadians(210.0f)},
+        {{-8.0f, 0.0f, 38.0f}, 7.0f, XMConvertToRadians(265.0f)},
+        {{24.0f, 0.0f, 46.0f}, 6.0f, XMConvertToRadians(80.0f)},
+        {{-29.0f, 0.0f, 52.0f}, 8.5f, XMConvertToRadians(175.0f)},
+        {{33.0f, 0.0f, 61.0f}, 5.5f, XMConvertToRadians(310.0f)},
+        {{-17.0f, 0.0f, 70.0f}, 10.0f, XMConvertToRadians(240.0f)},
+        {{21.0f, 0.0f, 78.0f}, 9.0f, XMConvertToRadians(30.0f)},
+        {{5.0f, 0.0f, 44.0f}, 2.0f, XMConvertToRadians(125.0f)}
     };
 
     return true;
 }
 
-// ============================================================
-// Animated survivor test controls
-// ============================================================
-
-void Scene::UpdateTestCharacter(
+void Scene::UpdatePlayerCharacter(
     Renderer& renderer,
     float deltaTime,
-    bool moveForward,
-    bool moveBackward,
-    bool jumpPressed)
+    const XMFLOAT3& feetPosition,
+    float yaw,
+    bool moving,
+    bool sprinting,
+    bool grounded)
 {
-    if (!m_testCharacterLoaded)
+    if (!m_playerCharacterLoaded)
         return;
 
-    const XMFLOAT3 position = m_testCharacter.Position();
-    const float groundHeight = m_terrain.HeightAt(position.x, position.z);
-
-    m_testCharacter.Update(
+    m_playerCharacter.UpdateFromPlayer(
         renderer,
         deltaTime,
-        groundHeight,
-        moveForward,
-        moveBackward,
-        jumpPressed);
+        feetPosition,
+        yaw,
+        moving,
+        sprinting,
+        grounded);
 }
-
-// ============================================================
-// Terrain height
-// ============================================================
 
 float Scene::GroundHeightAt(
     float x,
     float z) const
 {
-    return
-        m_terrain.HeightAt(
-            x,
-            z
-        );
+    return m_terrain.HeightAt(x, z);
 }
-
-// ============================================================
-// Shooting
-// ============================================================
 
 bool Scene::Shoot(
     const XMFLOAT3& origin,
     const XMFLOAT3& direction)
 {
-    return
-        m_enemy.Shoot(
-            origin,
-            direction
-        );
+    return m_enemy.Shoot(origin, direction);
 }
-
-// ============================================================
-// Render complete scene
-// ============================================================
 
 void Scene::Render(
     Renderer& renderer,
     const XMMATRIX& view,
     const XMMATRIX& projection,
-    const XMFLOAT3& cameraPosition)
+    const XMFLOAT3& cameraPosition,
+    bool renderPlayerBody,
+    bool renderPlayerRifle)
 {
-    // ========================================================
-    // Terrain
-    // ========================================================
-
     m_terrain.Render(
         renderer,
         view,
         projection,
         cameraPosition
     );
-
-    // ========================================================
-    // Enemy
-    // ========================================================
 
     m_enemy.Render(
         renderer,
@@ -294,55 +171,45 @@ void Scene::Render(
         cameraPosition
     );
 
-    // ========================================================
-    // Real OBJ rocks
-    // ========================================================
+    if (renderPlayerBody && m_playerCharacterLoaded)
+    {
+        m_playerCharacter.Render(
+            renderer,
+            view,
+            projection,
+            cameraPosition,
+            renderPlayerRifle);
+
+        renderer.RestoreWorldPipeline();
+    }
 
     if (m_rockLoaded)
     {
-        // Normalize the original OBJ first.
-        //
-        // Hierdoor maakt het niet uit of rock01.obj oorspronkelijk
-        // 0.2 units of 100 units groot geëxporteerd werd.
         XMMATRIX normalized =
-            m_rockModel.MakeNormalizedTransform(
-                1.0f
-            );
+            m_rockModel.MakeNormalizedTransform(1.0f);
 
-        for (const RockInstance& rock :
-             m_rocks)
+        for (const RockInstance& rock : m_rocks)
         {
-            // Terrain hoogte op deze X/Z positie.
             float terrainY =
                 m_terrain.HeightAt(
                     rock.position.x,
                     rock.position.z
                 );
 
-            // Omdat MakeNormalizedTransform het model rond zijn
-            // middelpunt centreert, zetten we hem iets hoger zodat
-            // hij niet half onder het zand verdwijnt.
             float rockYOffset =
-                rock.scale *
-                0.22f;
+                rock.scale * 0.22f;
 
             XMMATRIX world =
-                normalized
-                *
+                normalized *
                 XMMatrixScaling(
                     rock.scale,
                     rock.scale,
                     rock.scale
-                )
-                *
-                XMMatrixRotationY(
-                    rock.yaw
-                )
-                *
+                ) *
+                XMMatrixRotationY(rock.yaw) *
                 XMMatrixTranslation(
                     rock.position.x,
-                    terrainY +
-                        rockYOffset,
+                    terrainY + rockYOffset,
                     rock.position.z
                 );
 
@@ -355,8 +222,6 @@ void Scene::Render(
             );
         }
 
-        // ObjModel heeft zijn eigen shader gebruikt.
-        // Herstel daarna onze normale wereldpipeline.
         renderer.RestoreWorldPipeline();
     }
 }
