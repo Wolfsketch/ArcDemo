@@ -649,7 +649,7 @@ bool AnimatedGltfModel::Load(
     }
 
     // --------------------------------------------------------
-    // Node hierarchy / bind pose
+    // Node hierarchy / imported pose
     // --------------------------------------------------------
     m_nodes.resize(model.nodes.size());
 
@@ -723,6 +723,83 @@ bool AnimatedGltfModel::Load(
                         m[12], m[13], m[14], m[15]);
                     XMStoreFloat4x4(&skin.inverseBind[j], matrix);
                 }
+            }
+        }
+    }
+
+    // --------------------------------------------------------
+    // Recover the true neutral skin bind pose.
+    // --------------------------------------------------------
+    // This Sketchfab asset ships with a Crossarmed clip and its node defaults
+    // are not a useful locomotion base. If we use those node transforms as
+    // restLocal, the procedural walk only adds small deltas on top of crossed
+    // arms and a bent leg. The inverse-bind matrices are the authoritative
+    // skin bind pose: inverse(inverseBind) is the joint's global bind matrix.
+    // Reconstruct local joint transforms from that pose so idle/walk/jump all
+    // start from a neutral body. At neutral, inverseBind * jointGlobal becomes
+    // identity, which also keeps the original skinned vertex bind shape intact.
+    {
+        std::vector<XMMATRIX> importedGlobals(m_nodes.size(), XMMatrixIdentity());
+
+        std::function<void(int, const XMMATRIX&)> evaluateImported;
+        evaluateImported = [&](int nodeIndex, const XMMATRIX& parentGlobal)
+        {
+            if (nodeIndex < 0 || nodeIndex >= static_cast<int>(m_nodes.size()))
+                return;
+
+            const XMMATRIX local = XMLoadFloat4x4(&m_nodes[nodeIndex].restLocal);
+            const XMMATRIX global = local * parentGlobal;
+            importedGlobals[nodeIndex] = global;
+
+            for (int child : m_nodes[nodeIndex].children)
+                evaluateImported(child, global);
+        };
+
+        for (int root : m_rootNodes)
+            evaluateImported(root, XMMatrixIdentity());
+
+        for (const Skin& skin : m_skins)
+        {
+            std::vector<XMMATRIX> bindGlobals(skin.joints.size(), XMMatrixIdentity());
+
+            for (size_t j = 0; j < skin.joints.size(); ++j)
+            {
+                const XMMATRIX inverseBind = XMLoadFloat4x4(&skin.inverseBind[j]);
+                XMVECTOR determinant{};
+                bindGlobals[j] = XMMatrixInverse(&determinant, inverseBind);
+            }
+
+            for (size_t j = 0; j < skin.joints.size(); ++j)
+            {
+                const int nodeIndex = skin.joints[j];
+                if (nodeIndex < 0 || nodeIndex >= static_cast<int>(m_nodes.size()))
+                    continue;
+
+                const int parentIndex = m_nodes[nodeIndex].parent;
+                XMMATRIX parentGlobal = XMMatrixIdentity();
+
+                if (parentIndex >= 0)
+                {
+                    bool parentIsJoint = false;
+
+                    for (size_t parentSlot = 0; parentSlot < skin.joints.size(); ++parentSlot)
+                    {
+                        if (skin.joints[parentSlot] == parentIndex)
+                        {
+                            parentGlobal = bindGlobals[parentSlot];
+                            parentIsJoint = true;
+                            break;
+                        }
+                    }
+
+                    if (!parentIsJoint && parentIndex < static_cast<int>(importedGlobals.size()))
+                        parentGlobal = importedGlobals[parentIndex];
+                }
+
+                XMVECTOR parentDeterminant{};
+                const XMMATRIX inverseParent = XMMatrixInverse(&parentDeterminant, parentGlobal);
+                const XMMATRIX localBind = bindGlobals[j] * inverseParent;
+                XMStoreFloat4x4(&m_nodes[nodeIndex].restLocal, localBind);
             }
         }
     }
@@ -1055,9 +1132,8 @@ void AnimatedGltfModel::EvaluatePose(
             delta.yaw,
             delta.roll);
 
-        // Keep the exact imported bind transform intact. Some Sketchfab/FBX
-        // nodes carry axis-conversion matrices that do not round-trip cleanly
-        // through matrix decomposition. Add our procedural rotation before it.
+        // Keep the exact reconstructed bind transform intact. Add procedural
+        // locomotion before it so the motion starts from the neutral bind pose.
         localMatrices[i] = deltaRotation * restLocal;
     }
 
